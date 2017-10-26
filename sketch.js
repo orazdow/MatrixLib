@@ -21,7 +21,7 @@ function setup(){
 
 function mousePressed(){
 	background(200);
-	//m.transformation([[1,0,0,mouseX-250],[0,1,0,mouseY-250],[0,0,1,1],[0,0,0,1]]);
+	//m.transformation([[1,0,0,0.2*(mouseX-250)],[0,1,0,0.2*(mouseY-250)],[0,0,1,1],[0,0,0,1]]);
 	m.transformation(t);
 	m.getColVectors().forEach((v)=>{
 		ellipse(v.x, v.y, 2, 2);
@@ -29,13 +29,18 @@ function mousePressed(){
 }
 
 function draw(){
-
+	// background(200);
+	// m.transformation([[1,0,0,0.02*(mouseX-250)],[0,1,0,0.02*(mouseY-250)],[0,0,1,1],[0,0,0,1]]);
+	// //m.transformation(t);
+	// m.getColVectors().forEach((v)=>{
+	// 	ellipse(v.x, v.y, 2, 2);
+	// });
 }
 
 // always creates a vector in R4:
 // good link: https://math.stackexchange.com/questions/336/why-are-3d-transformation-matrices-4-times-4-instead-of-3-times-3
 function Vector(x, y, z, w){
-	this.list = [0,0,0,1]; // w component = 1
+	this.list = [0,0,0,1]; // w component = 1 (needed to shift origin)
 	let fromArray = false;
 	if(x instanceof Array){ 
 		fromArray = true;
