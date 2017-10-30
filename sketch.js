@@ -24,12 +24,11 @@ function setup(){
 	v7 = new Vector(1,1,1);
 	v8 = new Vector(0,1,1);
 
-	thetaz = 0.02; thetax = 0.022; thetay = 0.008;
+	thetaz = 0.016; thetax = 0.018; thetay = 0.008;
 	m = new Matrix(v1,v2,v3,v4,v5,v6,v7,v8)
-	let size = 30;
+	let size = 100;
 	m.transformation([[size,0,0,0],[0,size,0,0],[0,0,size,0],[0,0,0,1]]);
-
-	m.transformation([[1,0,0,-size/2],[0,1,0,-size/2],[0,0,1,0],[0,0,0,1]]); 
+	m.transformation([[1,0,0,-size/2],[0,1,0,-size/2],[0,0,1,-size/2],[0,0,0,1]]); 
 
 	zrotation = [[Math.cos(thetaz), -Math.sin(thetaz), 0, 0],
 				[Math.sin(thetaz), Math.cos(thetaz), 0, 0],
@@ -44,10 +43,8 @@ function setup(){
 				[-Math.sin(thetay), 0, Math.cos(thetay), 0],
 				[0,0,0,1]];
 
-	//projection = new Matrix([1],[1],[1],[0]);
 
 	projection = new Matrix([[Math.sqrt(3), 0, -Math.sqrt(3), 0],[1,2,1,0],[Math.sqrt(2), -Math.sqrt(2), Math.sqrt(2), 0],[0,0,0,1]]);
-
 	rotation = new Matrix(zrotation);
 	rotation.transformation(xrotation);
 	rotation.transformation(yrotation);
@@ -58,7 +55,7 @@ function draw(){
 	//let t1 = performance.now();
 	m.transformation(rotation);
 	m.startChain();
-     m.leftMultiply(projection); 
+  //  m.leftMultiply(projection); 
      m.leftMultiply([[1,0,0,mouseX],[0,1,0,mouseY],[0,0,1,0],[0,0,0,1]]); 
     m.stopChain();
 	// t2 = performance.now()-t1;
