@@ -40,6 +40,7 @@ function Vector(x, y, z, w){
 class Matrix{
 
 	constructor(m){
+		this.chain = false;
 		this.rows = [];
 		this.cols = [];
 		this.tcols = []; //< non-accumulating transormation result
@@ -84,6 +85,15 @@ class Matrix{
 	getresultColMatrix(){
 		return this.tcols;
 	}
+
+	startChain(){
+		this.chain = true;
+	}
+
+	stopChain(){
+		this.chain = false;
+	}
+
 	// same as columns if nothing multiplied
 	x(i){
 		return this.tcols[i][0];
@@ -131,33 +141,35 @@ class Matrix{
 	}
 
 	leftMultiply(m, save){ 
-		let n = []; this.tcols = [];
+		let n = [], cols = [];
 		if(m instanceof Array){ 
 			if(m[0].length != this.r){console.log('incorrect dimensions:', m[0].length, '!=', this.r); return null;}
-			for(let i = 0; i < this.c; i++){this.tcols.push([]);}
+			for(let i = 0; i < this.c; i++){cols.push([]);}
 
 			for (let i = 0; i < m.length; i++) {
 					n.push([]);
 				for (let j = 0; j < this.c; j++) {
-					n[i][j] = this.dot(m[i], this.cols[j]);
-					this.tcols[j][i] = n[i][j];
+					n[i][j] = this.chain ? this.dot(m[i], this.tcols[j]) : this.dot(m[i], this.cols[j]);
+					cols[j][i] = n[i][j];
 				}
 			}	
-			if(save){this.rows = n; this.cols = this.tcols;}
+			this.tcols = cols;
+			if(save){this.rows = n; this.cols = cols;}
 			return n;
 		}
 		// if Matrix obj
 		if(m.c != this.r){console.log('incorrect dimensions:', m.c, '!=', this.r); return null;}
-		for(let i = 0; i < this.c; i++){this.tcols.push([]);}
+		for(let i = 0; i < this.c; i++){cols.push([]);}
 
 		for(let i = 0; i < m.r; i++) {
 				n.push([]);
 			for (let j = 0; j < this.c; j++) {
-				n[i][j] = this.dot(m.rows[i], this.cols[j]);
-				this.tcols[j][i] = n[i][j];
+				n[i][j] = this.chain ? this.dot(m.rows[i], this.tcols[j]) : this.dot(m.rows[i], this.cols[j]);
+				cols[j][i] = n[i][j];
 			}
 		}
-		if(save){this.rows = n; this.cols = this.tcols;}
+		this.tcols = cols;
+		if(save){this.rows = n; this.cols = cols;}
 		return n;
 	}
 
