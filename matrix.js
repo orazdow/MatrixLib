@@ -1,58 +1,4 @@
 
-let m, t;
-let t2 = 0;
-
-var perf = [];
-var average = 0;
-function avg(arr){
-	return arr.reduce((a,b)=>{
-		return a + b;
-	}) / arr.length;
-}
-
-function setup(){
-
-	createCanvas(500,500);
-	background(200);
-
-
-	v1 = new Vector(0,0);
-	v2 = new Vector(10, 0);
-	v3 = new Vector(10, 10);
-	v4 = new Vector(0, 10);
-
-	m = new Matrix(v1,v2,v3,v4)
-	t = new Matrix([[1,0,0,5],[0,1,0,5],[0,0,1,5],[0,0,0,1]]);
-
-}
-
-function mousePressed(){
-	// background(200);
-	// //m.transformation([[1,0,0,0.2*(mouseX-250)],[0,1,0,0.2*(mouseY-250)],[0,0,1,1],[0,0,0,1]]);
-	// m.transformation(t);
-	// for (var i = 0; i < m.c; i++) {
-	// 	ellipse(m.x(i), m.y(i), 2, 2);
-	// }
-}
-
-function keyPressed(){
-	if(key === ' '){
-    	average = avg(perf);
-    	console.log(average);
-    	//console.log(t2)
-	}
-}
-
-function draw(){
-	background(200);
-	let t1 = performance.now();
-	m.transformation([[1,0,0,0.02*(mouseX-250)],[0,1,0,0.02*(mouseY-250)],[0,0,1,1],[0,0,0,1]]);
-	t2 = performance.now()-t1;
-	perf.push(t2);
-	for (var i = 0; i < m.c; i++) {
-		ellipse(m.x(i), m.y(i), 2, 2);
-	}
-}
 
 // always creates a vector in R4:
 function Vector(x, y, z, w){
@@ -96,6 +42,7 @@ class Matrix{
 	constructor(m){
 		this.rows = [];
 		this.cols = [];
+		this.tcols = []; //< non-accumulating transormation result
 		this.r = 0;
 		this.c = 0;
 		if(arguments.length > 1){
@@ -110,15 +57,18 @@ class Matrix{
 	fromRowArray(m){
 		this.rows = [];
 		this.cols = [];
+		this.tcols = [];
 		this.r = m.length;
 		this.c = m[0].length;
 		for(let i = 0; i < this.c; i++){
 			this.cols.push([]);
+			this.tcols.push([]);
 		}
 		m.forEach((el)=>{
 			this.rows.push(el);
 			for(let i = 0; i < this.c; i++){
 				this.cols[i].push(el[i]);
+				this.tcols[i].push(el[i]);
 			}
 		})
 	}
@@ -131,126 +81,108 @@ class Matrix{
 		return this.cols;
 	}
 
+	getresultColMatrix(){
+		return this.tcols;
+	}
+	// same as columns if nothing multiplied
 	x(i){
-		return this.cols[i][0];
+		return this.tcols[i][0];
 	}
 	y(i){
-		return this.cols[i][1];
+		return this.tcols[i][1];
 	}
 	z(i){
-		return this.cols[i][2];
+		return this.tcols[i][2];
 	}
 
-	multiply(m){
+	multiply(m){ 
 		let n = [];
-		if(m instanceof Array){ // columns not precomputed
+		if(m instanceof Array){ // < columns not precomputed
 			if(this.c != m.length){console.log('incorrect dimensions:', this.c, '!=', m.length); return null;}
 
-			let cols = [];	
-			for(let i = 0; i < m[0].length; i++){cols.push([]);}
+			this.tcols = [];	
+		for (let i = 0; i < m[0].length; i++) {
+				this.tcols.push([]);
+			  for (let j = 0; j < m.length; j++) {
+			  	this.tcols[i].push(m[j][i]);
+			  }
+		}
 
 			for (let i = 0; i < this.r; i++) {
 				n.push([]);
 				for (let j = 0; j < m[0].length; j++) {
-					cols[j][i] = m[i][j];
-					n[i][j] = this.dot(this.rows[i], cols[j]);
+					n[i][j] = this.dot(this.rows[i], this.tcols[j]);
+					this.tcols[j][i] = n[i][j];
 				}
-			}		
+			 }	
 			return n;
 		}
-		// if Matrix obj
+		//if Matrix obj
 		if(this.c != m.r){console.log('incorrect dimensions:', this.c, '!=', m.r); return null;}
 
 		for (let i = 0; i < this.r; i++) {
 				n.push([]);
 			for (let j = 0; j < m.c; j++) {
 				n[i][j] = this.dot(this.rows[i], m.cols[j]);
+				this.tcols[j][i] = n[i][j];
 			}
 		}
 		return n;
 	}
 
-	leftMultiply(m){ 
-		let n = [];
+	leftMultiply(m, save){ 
+		let n = []; this.tcols = [];
 		if(m instanceof Array){ 
 			if(m[0].length != this.r){console.log('incorrect dimensions:', m[0].length, '!=', this.r); return null;}
+			for(let i = 0; i < this.c; i++){this.tcols.push([]);}
+
 			for (let i = 0; i < m.length; i++) {
 					n.push([]);
 				for (let j = 0; j < this.c; j++) {
 					n[i][j] = this.dot(m[i], this.cols[j]);
+					this.tcols[j][i] = n[i][j];
 				}
 			}	
+			if(save){this.rows = n; this.cols = this.tcols;}
 			return n;
 		}
 		// if Matrix obj
 		if(m.c != this.r){console.log('incorrect dimensions:', m.c, '!=', this.r); return null;}
+		for(let i = 0; i < this.c; i++){this.tcols.push([]);}
 
-		for (let i = 0; i < m.r; i++) {
+		for(let i = 0; i < m.r; i++) {
 				n.push([]);
 			for (let j = 0; j < this.c; j++) {
 				n[i][j] = this.dot(m.rows[i], this.cols[j]);
+				this.tcols[j][i] = n[i][j];
 			}
-		}		
+		}
+		if(save){this.rows = n; this.cols = this.tcols;}
 		return n;
-	};
+	}
 
 	transformation(m){  
-		if(m instanceof Array){
-			if(m[0].length != this.r){
-				console.log('incorrect dimensions:', m[0].length, '!=', this.r); 
-				return null;
-			}
-			// match row length
-			if(this.rows.length != m.length){
-				while(this.rows.length < m.length){this.rows.push([]);}
-				while(this.rows.length > m.length){this.rows.pop();}
-			}
-			// replace elements
-			for (let i = 0; i < m.length; i++) {
-				for (let j = 0; j < this.c; j++) {
-					let d = this.dot(m[i], this.cols[j]);
-					this.rows[i][j] = d;
-					this.cols[j][i] = d;
-				}
-			}
-                return;
-		}
-		// if Matrix obj
-		if(m.c != this.r){
-			console.log('incorrect dimensions:', m.c, '!=', this.r); 
-			return null;
-		}
-		// match row length
-		if(this.rows.length != m.rows.length){
-			while(this.rows.length < m.rows.length){this.rows.push([]);}
-			while(this.rows.length > m.rows.length){this.rows.pop();}
-		}		
-		// replace elements
-		for (let i = 0; i < m.r; i++) {
-			for (let j = 0; j < this.c; j++) {
-				let d = this.dot(m.rows[i], this.cols[j]);
-				this.rows[i][j] = d;
-				this.cols[j][i] = d;
-			}
-		}		
-	};
+		this.leftMultiply(m, true);
+	}
 
 	transform(m){
-		m.transformation(this.rows);
+		m.transformation(this);
 	}
 
 	addVector(v){
 		if(v.list){v = v.list;}
 
 		if(this.r === 0){
-			this.cols.push(v);
+			this.cols.push(v); 
+			this.tcols.push(v);
 			this.r = v.length;
 			this.c++;
 			for (let i = 0; i < this.r; i++) {
 				this.rows.push([]);
 			}
 		}else if(v.length === this.r){
-			this.cols.push(v);
+			this.cols.push(v); 
+			this.tcols.push(v);
 			this.c++;
 		}
 
